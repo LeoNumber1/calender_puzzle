@@ -1,14 +1,20 @@
 package server
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"sign/puzzle/constant"
 	"sign/puzzle/shape"
-	"strconv"
-	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 var (
@@ -16,7 +22,14 @@ var (
 	originMapHard *shape.Map
 	puzzles       []shape.Puzzle
 	puzzlesHard   []shape.Puzzle
+	show          = true
 )
+
+func Init(showPic string) {
+	if showPic != "true" {
+		show = false
+	}
+}
 
 func init() {
 	// 初始化map
@@ -142,7 +155,62 @@ func Run() {
 	r := gin.Default()
 	r.GET("/resolve", resolve)
 	r.GET("/getMap", getMap)
-	r.Run(":8888")
+	if err := r.Run(":8888"); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func RunLocal() {
+	printHelp()
+	input := bufio.NewScanner(os.Stdin)
+	for input.Scan() {
+		line := input.Text()
+
+		// 输入exit时 结束
+		if line == "exit" {
+			break
+		} else if line == "help" {
+			printHelp()
+			continue
+		}
+
+		arr := strings.Split(line, " ")
+		var mon, d, week string
+		switch len(arr) {
+		case 3:
+			mon = arr[0]
+			d = arr[1]
+			week = arr[2]
+		case 2:
+			mon = arr[0]
+			d = arr[1]
+		default:
+			fmt.Println("输入格式错误(╯▔皿▔)╯")
+			printHelp()
+			continue
+		}
+		month, day, modeEasy, err := checkInput(mon, d, week)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		start := time.Now()
+		if modeEasy {
+			resolveEasy(month, day)
+		} else {
+			resolveHard(month, day, week)
+		}
+		fmt.Println("total cost time:", time.Since(start))
+	}
+}
+
+func printHelp() {
+	fmt.Println("--> 输入【help】打印此提示")
+	fmt.Println("--> 输入【exit】退出程序")
+	fmt.Println("--> 输入【月 日】查看简单日历拼图答案")
+	fmt.Println("--> 输入【月 日 周】查看困难日历拼图答案")
+	fmt.Println("--> 如：【2月14日星期四】输入：2 14 四")
+	fmt.Println("=====================================")
 }
 
 type response struct {
@@ -300,6 +368,8 @@ func searchOneRes(modeEasy bool, calendar *shape.Map, week string) ([][constant.
 		}
 	}
 	fmt.Printf("Down.Total search %d possibilities\n", backCount)
-	calendar.Show(height, week)
+	if show {
+		calendar.Show(height, week)
+	}
 	return *calendar, int64(backCount)
 }

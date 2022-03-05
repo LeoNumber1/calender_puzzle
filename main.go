@@ -1,35 +1,30 @@
 package main
 
 import (
-	"fmt"
-	"sign/puzzle/constant"
+	"flag"
+	"log"
 	"sign/puzzle/server"
-	"sign/puzzle/shape"
 )
 
+var (
+	mode    string
+	showPic string
+)
+
+func init() {
+	flag.StringVar(&mode, "mode", "server", "running mode, server or local")
+	flag.StringVar(&showPic, "show", "true", "show pic in log when use server")
+}
+
 func main() {
-	//testPrint()
-	//testShape()
-	//for _, puzzle := range puzzles {
-	//	puzzle.Show()
-	//}
-	//return
-
-	server.Run()
-}
-
-func testPrint() {
-	for i := 0; i < 11; i++ {
-		shape.PrintBlock(i)
+	flag.Parse()
+	if mode != "server" {
+		log.Println("running in local")
+		server.RunLocal()
+		return
 	}
-	shape.PrintBlock(constant.MONTH)
-	shape.PrintBlock(constant.DAY)
-	shape.PrintBlock(constant.WEEK)
-	shape.PrintBlock(constant.WALL)
-}
 
-func testShape() {
-	a := shape.NewShape(2, 3, [][]int{{1, 2, 3}, {4, 5, 6}})
-	b := shape.NewShape(2, 3, [][]int{{1, 2, 3}, {4, 5, 6}})
-	fmt.Println(a.Equal(b))
+	log.Println("running as a server ...")
+	server.Init(showPic)
+	server.Run()
 }
