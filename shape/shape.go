@@ -1,22 +1,13 @@
 package shape
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 
 	"sign/puzzle/constant"
 )
 
-var (
-	height int
-	mode   string
-)
-
-func Init(modeIn string, h int) {
-	mode = modeIn
-	height = h
-}
+const HOLD = -1
 
 func PrintBlock(id int) {
 	switch id {
@@ -130,17 +121,32 @@ func (sh Shape) Equal(in Shape) bool {
 	return reflect.DeepEqual(sh, in)
 }
 
-func NewMap() *Map {
+func NewMap(modeEasy bool) *Map {
+	var height = constant.MAP_HEIGHT
+	if !modeEasy {
+		height = constant.MAP_HEIGHT_HARD
+	}
 	cal := make(Map, height)
 	return &cal
 }
 
 type Map [][constant.MAP_WIDTH]int
 
-func (m *Map) SetWall() {
+func (m *Map) DeepCopy() *Map {
+	height := len(*m)
+	ret := make(Map, height)
+	for i := 0; i < height; i++ {
+		for j := 0; j < constant.MAP_WIDTH; j++ {
+			ret[i][j] = (*m)[i][j]
+		}
+	}
+	return &ret
+}
+
+func (m *Map) SetWall(modeEasy bool) {
 	(*m)[0][6] = constant.WALL
 	(*m)[1][6] = constant.WALL
-	if mode != constant.MODE_EASY {
+	if !modeEasy {
 		(*m)[7][0] = constant.WALL
 		(*m)[7][1] = constant.WALL
 		(*m)[7][2] = constant.WALL
@@ -153,47 +159,29 @@ func (m *Map) SetWall() {
 	}
 }
 
-func (m *Map) SetDate(month, day int, week string) error {
-	maxDay := 30
-	switch {
-	case month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12:
-		maxDay = 31
-	case month == 2:
-		maxDay = 29
-	case month == 4 || month == 6 || month == 9 || month == 11:
-		maxDay = 30
-	default:
-		return errors.New("输入正确的月份(╯▔皿▔)╯")
-	}
-	if day <= 0 || day > maxDay {
-		return errors.New("输入合适的日期(╯▔皿▔)╯")
-	}
+func (m *Map) SetDate(month, day int, week string) {
 	(*m)[(month-1)/6][(month-1)%6] = constant.MONTH
 	(*m)[(day-1)/7+2][(day-1)%7] = constant.DAY
-	if mode != constant.MODE_EASY {
-		switch week {
-		case constant.MONDAY:
-			(*m)[6][4] = constant.WEEK
-		case constant.TUESDAY:
-			(*m)[6][5] = constant.WEEK
-		case constant.WEDNESDAY:
-			(*m)[6][6] = constant.WEEK
-		case constant.THURSDAY:
-			(*m)[7][4] = constant.WEEK
-		case constant.FRIDAY:
-			(*m)[7][5] = constant.WEEK
-		case constant.SATURDAY:
-			(*m)[7][6] = constant.WEEK
-		case constant.SUNDAY:
-			(*m)[6][3] = constant.WEEK
-		default:
-			return errors.New("输入合适的星期(╯▔皿▔)╯")
-		}
+	switch week {
+	case constant.MONDAY:
+		(*m)[6][4] = constant.WEEK
+	case constant.TUESDAY:
+		(*m)[6][5] = constant.WEEK
+	case constant.WEDNESDAY:
+		(*m)[6][6] = constant.WEEK
+	case constant.THURSDAY:
+		(*m)[7][4] = constant.WEEK
+	case constant.FRIDAY:
+		(*m)[7][5] = constant.WEEK
+	case constant.SATURDAY:
+		(*m)[7][6] = constant.WEEK
+	case constant.SUNDAY:
+		(*m)[6][3] = constant.WEEK
 	}
-	return nil
+	return
 }
 
-func (m Map) Show() {
+func (m Map) Show(height int, week string) {
 	for i := 0; i < height; i++ {
 		for j := 0; j < constant.MAP_WIDTH; j++ {
 			switch m[i][j] {
@@ -210,8 +198,9 @@ func (m Map) Show() {
 				}
 				fmt.Printf("%d", day)
 			case constant.WEEK:
-				// TODO
-				fmt.Printf("周")
+				fmt.Printf(week)
+			case HOLD:
+				fmt.Printf("%d", HOLD)
 			default:
 				PrintBlock(m[i][j])
 			}
@@ -225,11 +214,48 @@ func (m Map) Show() {
    检查地图，提前剪枝一些不可能求解的情况
    1. 出现小于最小拼图块大小的联通区域
 */
-func (m Map) CheckMap() bool {
-	ret := true
-	//if constant.MIN_PUZZLE  {
+func (m *Map) CheckMap(modeEasy bool) bool {
+	myMap := m.DeepCopy()
+	min := constant.MIN_PUZZLE
+	height := len(*myMap)
+	if !modeEasy {
+		min = constant.MIN_PUZZLE_HARD
+	}
 
-	//}
+	// dfs 判断剪枝
+	for i := range *myMap {
+		for j := range (*myMap)[i] {
+			if (*myMap)[i][j] == 0 {
+				count := dfs(myMap, i, j, 1, height)
+				if count < min {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
+var DIRECTION = [4][2]int{
+	{0, 1}, {0, -1}, {-1, 0}, {1, 0},
+}
+
+func dfs(cal *Map, x, y int, count, height int) int {
+	(*cal)[x][y] = HOLD
+	ret := count
+	for _, direct := range DIRECTION {
+		newx := x + direct[0]
+		newy := y + direct[1]
+		if newx < 0 || newx >= height {
+			continue
+		}
+		if newy < 0 || newy >= constant.MAP_WIDTH {
+			continue
+		}
+		if (*cal)[newx][newy] == 0 {
+			ret += dfs(cal, newx, newy, 1, height)
+		}
+	}
 	return ret
 }
 
@@ -317,7 +343,7 @@ func max(a, b int) int {
 
 //Check 检查是否能将本块放置在map上的xy位置处，左上角对齐xy
 //如果能放置，则放置，设置map对应区域和shape_index,X,Y
-func (p *Puzzle) Check(calendar *Map, x, y, index int) bool {
+func (p *Puzzle) Check(calendar *Map, x, y, index, height int, modeEasy bool) bool {
 	shap := p.allShapes[index]
 	// 检查边界
 	if y+shap.Height > height || x+shap.Width > constant.MAP_WIDTH {
@@ -337,6 +363,16 @@ func (p *Puzzle) Check(calendar *Map, x, y, index int) bool {
 				(*calendar)[y+i][x+j] = shap.MyShape[i][j]
 			}
 		}
+	}
+	if !calendar.CheckMap(modeEasy) {
+		for i := 0; i < shap.Height; i++ {
+			for j := 0; j < shap.Width; j++ {
+				if shap.MyShape[i][j] != 0 {
+					(*calendar)[y+i][x+j] = 0
+				}
+			}
+		}
+		return false
 	}
 	p.ShapeIndex = index
 	p.X = &x

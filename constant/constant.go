@@ -20,7 +20,7 @@ const (
 	MAP_WIDTH = 7
 
 	// WALL 地图上保留的空缺墙体
-	WALL = 820
+	WALL = 520
 
 	// MONTH 地图上保留的月空位
 	MONTH = 74
@@ -30,9 +30,6 @@ const (
 
 	// WEEK 地图上保留的周空位
 	WEEK = 76
-
-	// MODE_EASY 模式，easy是只有月和日，hard还有周
-	MODE_EASY = "easy"
 
 	// MONDAY 周一
 	MONDAY = "一"
@@ -53,4 +50,7 @@ const (
 const (
 	// MIN_PUZZLE 最小拼图块的大小，优化用
 	MIN_PUZZLE = 5
+
+	// MIN_PUZZLE_HARD 最小拼图块的大小，优化用
+	MIN_PUZZLE_HARD = 4
 )
