@@ -1,4 +1,4 @@
-module sign/puzzle
+module puzzle
 
 go 1.16
 

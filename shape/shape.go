@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"sign/puzzle/constant"
+	"puzzle/constant"
 )
 
 const HOLD = -1

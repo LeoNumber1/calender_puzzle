@@ -12,7 +12,7 @@
 ```bash
 # 参数说明
  -mode string
-        running mode, server or local (default "server")
+        running mode, server or local (default "local")
  -port string
         port when use server (default "8888")
  -show string
@@ -50,8 +50,8 @@ $ ./bin/puzzle-mac --mode=server --show=true --port=8888
 $ go run main.go --mode=server --show=true --port=8888
 
 # 控制台输出
-[GIN-debug] GET    /resolve                  --> sign/puzzle/server.resolve (3 handlers)
-[GIN-debug] GET    /getMap                   --> sign/puzzle/server.getMap (3 handlers)
+[GIN-debug] GET    /resolve                  --> puzzle/server.resolve (3 handlers)
+[GIN-debug] GET    /getMap                   --> puzzle/server.getMap (3 handlers)
 [GIN-debug] Listening and serving HTTP on :8888
 ```
 Get 访问 localhost:8888/resolve?month=2&day=14&week=四
@@ -63,7 +63,23 @@ Get 访问 localhost:8888/resolve?month=2&day=14&week=四
 以下是根据代码运行结果实际拼出来的图
 ![img_2.png](files/calender.jpeg)
 
+### 3 编译&&构建
+```bash
+# 构建镜像
+$ make container
 
+# 编译所有二进制文件
+$ make build
+
+# 编译macos二进制文件
+$ make build-local
+
+# 编译linux二进制文件
+$ make build-linux
+
+# 编译windows二进制文件
+$ make build-windows
+```
 ---
 ### 关于作者：
 
