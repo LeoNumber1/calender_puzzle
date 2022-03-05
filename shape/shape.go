@@ -4,8 +4,19 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+
 	"sign/puzzle/constant"
 )
+
+var (
+	height int
+	mode   string
+)
+
+func Init(modeIn string, h int) {
+	mode = modeIn
+	height = h
+}
 
 func PrintBlock(id int) {
 	switch id {
@@ -33,11 +44,20 @@ func PrintBlock(id int) {
 	case 3:
 		fmt.Printf("\033[41m()\033[40m")
 		break
+	case 9:
+		fmt.Printf("\033[42m* \033[40m")
+		break
+	case 10:
+		fmt.Printf("\033[43m@ \033[40m")
+		break
 	case constant.MONTH:
 		fmt.Printf("\033[40m月\033[40m")
 		break
 	case constant.DAY:
 		fmt.Printf("\033[40m日\033[40m")
+		break
+	case constant.WEEK:
+		fmt.Printf("\033[40m周\033[40m")
 		break
 	case constant.WALL:
 		fmt.Printf("\033[40m  \033[40m")
@@ -72,18 +92,6 @@ type Shape struct {
 	Width   int
 	MyShape [][]int
 }
-
-// New ...
-//func (sh Shape) New(h, w int, s [][]int) {
-//	sh.Height = h
-//	sh.Width = w
-//	sh.MyShape = s
-//	for i := 0; i < h; i++ {
-//		for j := 0; j < w; j++ {
-//
-//		}
-//	}
-//}
 
 // Rotate 顺时针旋转90度
 func (sh Shape) Rotate() Shape {
@@ -123,21 +131,29 @@ func (sh Shape) Equal(in Shape) bool {
 }
 
 func NewMap() *Map {
-	return new(Map)
+	cal := make(Map, height)
+	return &cal
 }
 
-type Map [constant.MAP_HEIGHT][constant.MAP_WIDTH]int
+type Map [][constant.MAP_WIDTH]int
 
-func (m *Map) New() {
-	m[0][6] = constant.WALL
-	m[1][6] = constant.WALL
-	m[6][3] = constant.WALL
-	m[6][4] = constant.WALL
-	m[6][5] = constant.WALL
-	m[6][6] = constant.WALL
+func (m *Map) SetWall() {
+	(*m)[0][6] = constant.WALL
+	(*m)[1][6] = constant.WALL
+	if mode != constant.MODE_EASY {
+		(*m)[7][0] = constant.WALL
+		(*m)[7][1] = constant.WALL
+		(*m)[7][2] = constant.WALL
+		(*m)[7][3] = constant.WALL
+	} else {
+		(*m)[6][3] = constant.WALL
+		(*m)[6][4] = constant.WALL
+		(*m)[6][5] = constant.WALL
+		(*m)[6][6] = constant.WALL
+	}
 }
 
-func (m *Map) SetDate(month, day int) error {
+func (m *Map) SetDate(month, day int, week string) error {
 	maxDay := 30
 	switch {
 	case month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12:
@@ -152,13 +168,33 @@ func (m *Map) SetDate(month, day int) error {
 	if day <= 0 || day > maxDay {
 		return errors.New("输入合适的日期(╯▔皿▔)╯")
 	}
-	m[(month-1)/6][(month-1)%6] = constant.MONTH
-	m[(day-1)/7+2][(day-1)%7] = constant.DAY
+	(*m)[(month-1)/6][(month-1)%6] = constant.MONTH
+	(*m)[(day-1)/7+2][(day-1)%7] = constant.DAY
+	if mode != constant.MODE_EASY {
+		switch week {
+		case constant.MONDAY:
+			(*m)[6][4] = constant.WEEK
+		case constant.TUESDAY:
+			(*m)[6][5] = constant.WEEK
+		case constant.WEDNESDAY:
+			(*m)[6][6] = constant.WEEK
+		case constant.THURSDAY:
+			(*m)[7][4] = constant.WEEK
+		case constant.FRIDAY:
+			(*m)[7][5] = constant.WEEK
+		case constant.SATURDAY:
+			(*m)[7][6] = constant.WEEK
+		case constant.SUNDAY:
+			(*m)[6][3] = constant.WEEK
+		default:
+			return errors.New("输入合适的星期(╯▔皿▔)╯")
+		}
+	}
 	return nil
 }
 
 func (m Map) Show() {
-	for i := 0; i < constant.MAP_HEIGHT; i++ {
+	for i := 0; i < height; i++ {
 		for j := 0; j < constant.MAP_WIDTH; j++ {
 			switch m[i][j] {
 			case constant.MONTH:
@@ -173,6 +209,9 @@ func (m Map) Show() {
 					fmt.Printf(" ")
 				}
 				fmt.Printf("%d", day)
+			case constant.WEEK:
+				// TODO
+				fmt.Printf("周")
 			default:
 				PrintBlock(m[i][j])
 			}
@@ -281,13 +320,13 @@ func max(a, b int) int {
 func (p *Puzzle) Check(calendar *Map, x, y, index int) bool {
 	shap := p.allShapes[index]
 	// 检查边界
-	if y+shap.Height > constant.MAP_HEIGHT || x+shap.Width > constant.MAP_WIDTH {
+	if y+shap.Height > height || x+shap.Width > constant.MAP_WIDTH {
 		return false
 	}
 	//本块不为0的坐标，map上要为0
 	for i := 0; i < shap.Height; i++ {
 		for j := 0; j < shap.Width; j++ {
-			if shap.MyShape[i][j] != 0 && calendar[y+i][x+j] != 0 {
+			if shap.MyShape[i][j] != 0 && (*calendar)[y+i][x+j] != 0 {
 				return false
 			}
 		}
@@ -295,7 +334,7 @@ func (p *Puzzle) Check(calendar *Map, x, y, index int) bool {
 	for i := 0; i < shap.Height; i++ {
 		for j := 0; j < shap.Width; j++ {
 			if shap.MyShape[i][j] != 0 {
-				calendar[y+i][x+j] = shap.MyShape[i][j]
+				(*calendar)[y+i][x+j] = shap.MyShape[i][j]
 			}
 		}
 	}
@@ -310,7 +349,7 @@ func (p Puzzle) Clear(m *Map) {
 	for i := 0; i < shap.Height; i++ {
 		for j := 0; j < shap.Width; j++ {
 			if shap.MyShape[i][j] != 0 {
-				m[*p.Y+i][*p.X+j] = 0
+				(*m)[*p.Y+i][*p.X+j] = 0
 			}
 		}
 	}
