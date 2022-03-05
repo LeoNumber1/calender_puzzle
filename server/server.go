@@ -23,12 +23,14 @@ var (
 	puzzles       []shape.Puzzle
 	puzzlesHard   []shape.Puzzle
 	show          = true
+	port          string
 )
 
-func Init(showPic string) {
+func Init(showPic, p string) {
 	if showPic != "true" {
 		show = false
 	}
+	port = p
 }
 
 func init() {
@@ -155,7 +157,7 @@ func Run() {
 	r := gin.Default()
 	r.GET("/resolve", resolve)
 	r.GET("/getMap", getMap)
-	if err := r.Run(":8888"); err != nil {
+	if err := r.Run(":" + port); err != nil {
 		log.Fatalln(err)
 	}
 }
