@@ -6,6 +6,7 @@ RUN make build-linux
 FROM debian:bullseye
 RUN mkdir -p /app
 COPY --from=builder /go/src/puzzle/bin /app
+COPY --from=builder /go/src/puzzle/views /app/views
 
 WORKDIR     /app
 ENTRYPOINT  ["/app/puzzle-linux"]

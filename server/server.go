@@ -156,6 +156,41 @@ func init() {
 func Run() {
 	r := gin.Default()
 	r.Use(Cors)
+	r.LoadHTMLFiles("./views/index.tmpl")
+	r.GET("/", func(c *gin.Context) {
+		t := time.Now().UTC().Add(time.Hour * 8)
+		var week string
+		switch t.Weekday() {
+		case 0:
+			week = "日"
+		case 1:
+			week = "一"
+		case 2:
+			week = "二"
+		case 3:
+			week = "三"
+		case 4:
+			week = "四"
+		case 5:
+			week = "五"
+		case 6:
+			week = "六"
+		}
+		month := int(t.Month())
+		day := t.Day()
+		mp, count, total := resolveHard(month, day, week)
+		ret := make(map[string]interface{})
+		ret["map"] = mp
+		ret["total"] = count
+		ret["time"] = total
+		ret["month"] = month
+		ret["day"] = day
+		ret["week"] = week
+		c.HTML(http.StatusOK, "index.tmpl", gin.H{
+			"title": "Calender Puzzle",
+			"ans":   ret,
+		})
+	})
 	r.GET("/resolve", resolve)
 	r.GET("/getMap", getMap)
 	if err := r.Run(":" + port); err != nil {
@@ -277,11 +312,12 @@ func getMap(c *gin.Context) {
 		return
 	}
 	myMap := originMap.DeepCopy()
+	if !modeEasy {
+		myMap = originMapHard.DeepCopy()
+	}
 	myMap.SetDate(mon, d, week)
 	ret := make(map[string]interface{})
-	if modeEasy {
-		ret["map"] = myMap
-	}
+	ret["map"] = myMap
 	c.JSON(http.StatusOK, response{Data: ret})
 }
 
