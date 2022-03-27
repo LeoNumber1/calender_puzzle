@@ -221,6 +221,7 @@ func Cors(context *gin.Context) {
 }
 
 func RunLocal() {
+	fmt.Println("====>>>>为了保证输出格式正确，请尽量放大本窗口，或者全屏<<<<====")
 	printHelp()
 	input := bufio.NewScanner(os.Stdin)
 	for input.Scan() {
@@ -231,6 +232,8 @@ func RunLocal() {
 			break
 		} else if line == "help" {
 			printHelp()
+			continue
+		} else if line == "" {
 			continue
 		}
 
@@ -255,10 +258,13 @@ func RunLocal() {
 			continue
 		}
 		start := time.Now()
+		var calendars []*shape.Map
 		if modeEasy {
 			resolveEasy(month, day)
+			searchAllRes(calendars, true, month, day, "")
 		} else {
 			resolveHard(month, day, week)
+			searchAllRes(calendars, false, month, day, week)
 		}
 		fmt.Println("total cost time:", time.Since(start))
 	}
@@ -433,4 +439,103 @@ func searchOneRes(modeEasy bool, calendar *shape.Map, week string) ([][constant.
 		calendar.Show(height, week)
 	}
 	return *calendar, int64(backCount)
+}
+
+func searchAllRes(calendars []*shape.Map, modeEasy bool, month, day int, week string) {
+	var (
+		myMap      *shape.Map
+		back       bool //回溯标志
+		stackIndex int  //当前待放置的拼图序号
+		backCount  int  // 逐一为拼图块选好位置和形状，如果遇到无处安放的块，则回溯
+		resCount   int  //已经找到的解的数量
+		pieceNum   = constant.PIECE_NUM
+		height     = constant.MAP_HEIGHT
+		puzs       = puzzles
+	)
+	if modeEasy {
+		myMap = originMap.DeepCopy()
+		myMap.SetDate(month, day, "")
+	} else {
+		pieceNum = constant.PIECE_NUM_HARD
+		height = constant.MAP_HEIGHT_HARD
+		puzs = puzzlesHard
+		myMap = originMapHard.DeepCopy()
+		myMap.SetDate(month, day, week)
+	}
+
+	for {
+		for stackIndex < pieceNum && stackIndex >= 0 {
+			//	初始化
+			var i, j, k int
+			if back {
+				backCount++
+				//需要回溯，也就是当前拼图需要一个新的位置,要先从旧的位置删除掉
+				puzs[stackIndex].Clear(myMap)
+				i = *puzs[stackIndex].Y
+				j = *puzs[stackIndex].X
+				k = puzs[stackIndex].ShapeIndex + 1
+			} else {
+				i, j, k = 0, 0, 0
+			}
+
+			//为stack_index号拼图找一个位置
+			success := false
+			for ; i < height; i++ {
+				for ; j < constant.MAP_WIDTH; j++ {
+					for ; k < *puzs[stackIndex].ShapeNum; k++ {
+						if puzs[stackIndex].Check(myMap, j, i, k, height, modeEasy) {
+							success = true
+							break
+						}
+					}
+					if success {
+						break
+					}
+					k = 0
+				}
+				if success {
+					break
+				}
+				j = 0
+			}
+			if success {
+				stackIndex++
+				back = false
+			} else {
+				stackIndex--
+				back = true
+			}
+		}
+		if stackIndex == pieceNum {
+			//循环因为找到解而中断
+			//myMap.Show(height, week)
+			back = true
+			stackIndex--
+			resCount++
+			calendars = append(calendars, myMap.DeepCopy())
+		} else {
+			//循环因为找不到解而中断
+			break
+		}
+	}
+
+	showAllRes(calendars, height)
+	fmt.Printf("Down.Total search %d possibilities\n", backCount)
+}
+
+func showAllRes(calendars []*shape.Map, height int) {
+	size := len(calendars)
+	for k := 0; k < size; k += 6 {
+		for i := 0; i < height; i++ {
+			for l := k; l < k+6 && l < size; l++ {
+				for j := 0; j < constant.MAP_WIDTH; j++ {
+					shape.PrintBlock((*calendars[l])[i][j])
+				}
+				shape.PrintEmpty()
+			}
+			fmt.Println()
+		}
+		fmt.Println()
+	}
+	fmt.Printf("There are %d solutions\n", size)
 }
