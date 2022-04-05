@@ -192,6 +192,7 @@ func Run() {
 		})
 	})
 	r.GET("/resolve", resolve)
+	r.GET("/resolveAll", resolveAll)
 	r.GET("/getMap", getMap)
 	if err := r.Run(":" + port); err != nil {
 		log.Fatalln(err)
@@ -258,13 +259,12 @@ func RunLocal() {
 			continue
 		}
 		start := time.Now()
-		var calendars []*shape.Map
 		if modeEasy {
 			resolveEasy(month, day)
-			searchAllRes(calendars, true, month, day, "")
+			searchAllRes(true, false, month, day, "")
 		} else {
 			resolveHard(month, day, week)
-			searchAllRes(calendars, false, month, day, week)
+			searchAllRes(false, false, month, day, week)
 		}
 		fmt.Println("total cost time:", time.Since(start))
 	}
@@ -305,6 +305,22 @@ func resolve(c *gin.Context) {
 		ret["total"] = c
 		ret["time"] = t
 	}
+	c.JSON(http.StatusOK, response{Data: ret})
+}
+
+func resolveAll(c *gin.Context) {
+	month := c.Query("month")
+	day := c.Query("day")
+	week := c.Query("week")
+	mon, d, modeEasy, err := checkInput(month, day, week)
+	if err != nil {
+		c.JSON(http.StatusOK, response{ErrMsg: err.Error()})
+		return
+	}
+	ret := make(map[string]interface{})
+	maps, total := searchAllRes(modeEasy, true, mon, d, week)
+	ret["maps"] = maps
+	ret["total"] = total
 	c.JSON(http.StatusOK, response{Data: ret})
 }
 
@@ -441,7 +457,8 @@ func searchOneRes(modeEasy bool, calendar *shape.Map, week string) ([][constant.
 	return *calendar, int64(backCount)
 }
 
-func searchAllRes(calendars []*shape.Map, modeEasy bool, month, day int, week string) {
+func searchAllRes(modeEasy, inServer bool, month, day int, week string) ([]*shape.Map, int64) {
+	var calendars []*shape.Map
 	var (
 		myMap      *shape.Map
 		back       bool //回溯标志
@@ -513,14 +530,20 @@ func searchAllRes(calendars []*shape.Map, modeEasy bool, month, day int, week st
 			stackIndex--
 			resCount++
 			calendars = append(calendars, myMap.DeepCopy())
+			if inServer && len(calendars) == 100 {
+				break
+			}
 		} else {
 			//循环因为找不到解而中断
 			break
 		}
 	}
 
-	showAllRes(calendars, height)
-	fmt.Printf("Down.Total search %d possibilities\n", backCount)
+	if show {
+		showAllRes(calendars, height)
+		fmt.Printf("Down.Total search %d possibilities\n", backCount)
+	}
+	return calendars, int64(backCount)
 }
 
 func showAllRes(calendars []*shape.Map, height int) {
