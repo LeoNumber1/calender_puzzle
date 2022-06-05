@@ -86,6 +86,8 @@ $ make build-windows
 
 作者：`LeoNumber1(Yuan Li)`
 
+`在线体验地址`: [http://calenderpuzzle.site](http://calenderpuzzle.site)
+
 `mail`:
 [leo.vip@foxmail.com](mailto:leo.vip@foxmail.com)
 
