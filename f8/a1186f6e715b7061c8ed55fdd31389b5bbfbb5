@@ -1,0 +1,14 @@
+README.md
+  h_bf4ee866b901f6 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "f8a1186f6e715b7061c8ed55fdd31389b5bbfbb5",
+  "prompts": {},
+  "humans": {
+    "h_bf4ee866b901f6": {
+      "author": "liyuan <yuanli23@trip.com>"
+    }
+  }
+}
