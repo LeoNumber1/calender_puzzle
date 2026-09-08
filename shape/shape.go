@@ -2,6 +2,7 @@ package shape
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 
 	"puzzle/constant"
@@ -9,57 +10,66 @@ import (
 
 const HOLD = -1
 
+var terminalColor = func() bool {
+	if os.Getenv("NO_COLOR") != "" {
+		return false
+	}
+	info, err := os.Stdout.Stat()
+	return err == nil && info.Mode()&os.ModeCharDevice != 0
+}()
+
 func PrintBlock(id int) {
+	colors := [][3]int{
+		{0, 0, 0},
+		{251, 113, 133},
+		{96, 165, 250},
+		{52, 211, 153},
+		{251, 191, 36},
+		{167, 139, 250},
+		{249, 115, 22},
+		{45, 212, 191},
+		{129, 140, 248},
+		{232, 121, 249},
+		{132, 204, 22},
+	}
+	if id >= 1 && id <= 10 {
+		if terminalColor {
+			color := colors[id]
+			fmt.Printf("\033[48;2;%d;%d;%dm  \033[0m", color[0], color[1], color[2])
+		} else {
+			fmt.Printf("%02d", id)
+		}
+		return
+	}
+
 	switch id {
-	case 8:
-		fmt.Printf("\033[41m  \033[40m")
-		break
-	case 1:
-		fmt.Printf("\033[42m  \033[40m")
-		break
-	case 2:
-		fmt.Printf("\033[43m  \033[40m")
-		break
-	case 7:
-		fmt.Printf("\033[44m  \033[40m")
-		break
-	case 4:
-		fmt.Printf("\033[45m  \033[40m")
-		break
-	case 5:
-		fmt.Printf("\033[46m  \033[40m")
-		break
-	case 6:
-		fmt.Printf("\033[47m  \033[40m")
-		break
-	case 3:
-		fmt.Printf("\033[41m()\033[40m")
-		break
-	case 9:
-		fmt.Printf("\033[42m* \033[40m")
-		break
-	case 10:
-		fmt.Printf("\033[43m@ \033[40m")
-		break
 	case constant.MONTH:
-		fmt.Printf("\033[40m月\033[40m")
-		break
+		fmt.Print("月")
 	case constant.DAY:
-		fmt.Printf("\033[40m日\033[40m")
-		break
+		fmt.Print("日")
 	case constant.WEEK:
-		fmt.Printf("\033[40m周\033[40m")
-		break
+		fmt.Print("周")
 	case constant.WALL:
-		fmt.Printf("\033[40m  \033[40m")
-		break
+		if terminalColor {
+			fmt.Print("\033[48;2;37;43;59m  \033[0m")
+		} else {
+			fmt.Print("  ")
+		}
 	default:
-		fmt.Printf("\033[40m[]\033[40m")
+		fmt.Print("··")
 	}
 }
 
 func PrintEmpty() {
-	fmt.Printf("  ")
+	fmt.Print("  ")
+}
+
+func printSelected(value string) {
+	if terminalColor {
+		fmt.Printf("\033[1;38;2;23;32;51;48;2;255;255;255m%s\033[0m", value)
+	} else {
+		fmt.Print(value)
+	}
 }
 
 func NewShape(h, w int, s [][]int) Shape {
@@ -178,35 +188,31 @@ func (m *Map) SetDate(month, day int, week string) {
 	case constant.SUNDAY:
 		(*m)[6][3] = constant.WEEK
 	}
-	return
 }
 
 func (m Map) Show(height int, week string) {
+	fmt.Println("┌──────────────┐")
 	for i := 0; i < height; i++ {
+		fmt.Print("│")
 		for j := 0; j < constant.MAP_WIDTH; j++ {
 			switch m[i][j] {
 			case constant.MONTH:
 				month := i*6 + j + 1
-				if month < 10 {
-					fmt.Printf(" ")
-				}
-				fmt.Printf("%d", month)
+				printSelected(fmt.Sprintf("%2d", month))
 			case constant.DAY:
 				day := (i-2)*7 + j + 1
-				if day < 10 {
-					fmt.Printf(" ")
-				}
-				fmt.Printf("%d", day)
+				printSelected(fmt.Sprintf("%2d", day))
 			case constant.WEEK:
-				fmt.Printf(week)
+				printSelected(week)
 			case HOLD:
-				fmt.Printf("%d", HOLD)
+				fmt.Print("-1")
 			default:
 				PrintBlock(m[i][j])
 			}
 		}
-		fmt.Printf("\n")
+		fmt.Println("│")
 	}
+	fmt.Println("└──────────────┘")
 }
 
 // CheckMap ...
@@ -341,8 +347,8 @@ func max(a, b int) int {
 	return b
 }
 
-//Check 检查是否能将本块放置在map上的xy位置处，左上角对齐xy
-//如果能放置，则放置，设置map对应区域和shape_index,X,Y
+// Check 检查是否能将本块放置在map上的xy位置处，左上角对齐xy
+// 如果能放置，则放置，设置map对应区域和shape_index,X,Y
 func (p *Puzzle) Check(calendar *Map, x, y, index, height int, modeEasy bool) bool {
 	shap := p.allShapes[index]
 	// 检查边界

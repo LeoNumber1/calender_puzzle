@@ -222,23 +222,26 @@ func Cors(context *gin.Context) {
 }
 
 func RunLocal() {
-	fmt.Println("====>>>>为了保证输出格式正确，请尽量放大本窗口，或者全屏<<<<====")
 	printHelp()
 	input := bufio.NewScanner(os.Stdin)
+	fmt.Print("\n请输入日期 > ")
 	for input.Scan() {
-		line := input.Text()
+		line := strings.TrimSpace(input.Text())
 
 		// 输入exit时 结束
 		if line == "exit" {
+			fmt.Println("再见！")
 			break
 		} else if line == "help" {
 			printHelp()
+			fmt.Print("\n请输入日期 > ")
 			continue
 		} else if line == "" {
+			fmt.Print("请输入日期 > ")
 			continue
 		}
 
-		arr := strings.Split(line, " ")
+		arr := strings.Fields(line)
 		var mon, d, week string
 		switch len(arr) {
 		case 3:
@@ -249,34 +252,42 @@ func RunLocal() {
 			mon = arr[0]
 			d = arr[1]
 		default:
-			fmt.Println("输入格式错误(╯▔皿▔)╯")
-			printHelp()
+			fmt.Println("输入格式错误，请输入“月 日”或“月 日 星期”。")
+			fmt.Print("\n请输入日期 > ")
 			continue
 		}
 		month, day, modeEasy, err := checkInput(mon, d, week)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("输入有误：%s\n", err)
+			fmt.Print("\n请输入日期 > ")
 			continue
 		}
+		mode := "基础模式"
+		date := fmt.Sprintf("%d 月 %d 日", month, day)
+		if !modeEasy {
+			mode = "星期模式"
+			date += " 星期" + week
+		}
+		fmt.Printf("\n━━ %s · %s ━━\n\n", date, mode)
 		start := time.Now()
 		if modeEasy {
-			resolveEasy(month, day)
 			searchAllRes(true, false, month, day, "")
 		} else {
-			resolveHard(month, day, week)
 			searchAllRes(false, false, month, day, week)
 		}
-		fmt.Println("total cost time:", time.Since(start))
+		fmt.Printf("总耗时：%s\n", time.Since(start).Round(time.Millisecond))
+		fmt.Print("\n请输入日期 > ")
 	}
 }
 
 func printHelp() {
-	fmt.Println("--> 输入【help】打印此提示")
-	fmt.Println("--> 输入【exit】退出程序")
-	fmt.Println("--> 输入【月 日】查看简单日历拼图答案")
-	fmt.Println("--> 输入【月 日 周】查看困难日历拼图答案")
-	fmt.Println("--> 如：【2月14日星期四】输入：2 14 四")
-	fmt.Println("=====================================")
+	fmt.Println("╭────────────────────────────────────╮")
+	fmt.Println("│            日 历 拼 图             │")
+	fmt.Println("╰────────────────────────────────────╯")
+	fmt.Println("  月 日       基础模式，例如：2 14")
+	fmt.Println("  月 日 星期  星期模式，例如：2 14 四")
+	fmt.Println("  help        查看帮助")
+	fmt.Println("  exit        退出程序")
 }
 
 type response struct {
@@ -450,8 +461,8 @@ func searchOneRes(modeEasy bool, calendar *shape.Map, week string) ([][constant.
 			back = true
 		}
 	}
-	fmt.Printf("Down.Total search %d possibilities\n", backCount)
 	if show {
+		fmt.Printf("找到一个解法（回溯 %d 次）\n", backCount)
 		calendar.Show(height, week)
 	}
 	return *calendar, int64(backCount)
@@ -530,6 +541,9 @@ func searchAllRes(modeEasy, inServer bool, month, day int, week string) ([]*shap
 			stackIndex--
 			resCount++
 			calendars = append(calendars, myMap.DeepCopy())
+			if show && !inServer && len(calendars)%5 == 0 {
+				showResultRows(calendars[len(calendars)-5:], height, 5, resCount-4)
+			}
 			if inServer && len(calendars) == 100 {
 				break
 			}
@@ -540,25 +554,45 @@ func searchAllRes(modeEasy, inServer bool, month, day int, week string) ([]*shap
 	}
 
 	if show {
-		showAllRes(calendars, height)
-		fmt.Printf("Down.Total search %d possibilities\n", backCount)
+		if inServer {
+			showAllRes(calendars, height)
+		} else if remainder := len(calendars) % 5; remainder != 0 {
+			showResultRows(calendars[len(calendars)-remainder:], height, 5, resCount-remainder+1)
+		}
+		fmt.Printf("搜索完成：共 %d 个解法，回溯 %d 次\n", len(calendars), backCount)
 	}
 	return calendars, int64(backCount)
 }
 
 func showAllRes(calendars []*shape.Map, height int) {
+	showResultRows(calendars, height, 4, 1)
+}
+
+func showResultRows(calendars []*shape.Map, height, boardsPerRow, startNumber int) {
 	size := len(calendars)
-	for k := 0; k < size; k += 6 {
+	for k := 0; k < size; k += boardsPerRow {
+		for l := k; l < k+boardsPerRow && l < size; l++ {
+			fmt.Printf("      #%-9d  ", startNumber+l)
+		}
+		fmt.Println()
+		for l := k; l < k+boardsPerRow && l < size; l++ {
+			fmt.Print("┌──────────────┐  ")
+		}
+		fmt.Println()
 		for i := 0; i < height; i++ {
-			for l := k; l < k+6 && l < size; l++ {
+			for l := k; l < k+boardsPerRow && l < size; l++ {
+				fmt.Print("│")
 				for j := 0; j < constant.MAP_WIDTH; j++ {
 					shape.PrintBlock((*calendars[l])[i][j])
 				}
-				shape.PrintEmpty()
+				fmt.Print("│  ")
 			}
 			fmt.Println()
 		}
+		for l := k; l < k+boardsPerRow && l < size; l++ {
+			fmt.Print("└──────────────┘  ")
+		}
+		fmt.Println()
 		fmt.Println()
 	}
-	fmt.Printf("There are %d solutions\n", size)
 }

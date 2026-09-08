@@ -2,7 +2,7 @@
 .PHONY: build container build-local build-linux build-windows
 
 # Project output directory.
-OUTPUT_DIR := ./bin
+OUTPUT_DIR := ./bins
 
 # Build directory.
 BUILD_DIR := ./build

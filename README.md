@@ -8,7 +8,7 @@
 * 我在大佬的代码基础上加了进阶玩法，带星期。并使用dfs剪枝优化了算法。
 * 除了在本地运行，还可以启用一个http-server，方便远程调用。
 * 2022年3月28日，新增了本地运行搜索所有解法。
-* 2026年9月8日，优化前端页面显示。去掉bin目录下的二进制文件，需要的可以在github/gitee releases直接下载构建好的。
+* 2026年9月8日，优化前端页面显示。去掉bins目录下的二进制文件，需要的可以在github/gitee releases直接下载构建好的。
 
 ## 二、快速运行
 ```bash
@@ -24,7 +24,7 @@
 ### 1 本地运行
 ```bash
 # 本地二进制运行
-$ ./bin/puzzle-mac --mode=local
+$ ./bins/puzzle-mac --mode=local
 # 或者代码运行
 $ go run main.go --mode=local
 
@@ -47,7 +47,7 @@ $ 2 14 四
 ### 2 运行http服务
 ```bash
 # 启动http服务
-$ ./bin/puzzle-mac --mode=server --show=true --port=8888
+$ ./bins/puzzle-mac --mode=server --show=true --port=8888
 # 或者代码运行
 $ go run main.go --mode=server --show=true --port=8888
 
