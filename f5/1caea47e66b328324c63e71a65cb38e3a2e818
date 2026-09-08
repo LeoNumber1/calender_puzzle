@@ -1,0 +1,33 @@
+server/server.go
+  s_40802df784e47e::t_b611afd673e0b2 227,229,233,237,240,244,255-256,261-262,265-271,278-279,284-290,465,562,573-574,576-581,583-584,588,592-595
+  s_40802df784e47e::t_1b8b48fd16a79d 544-546,559-560,568-571,575
+  s_40802df784e47e::t_b193e7cf4092b6 557-558,561
+README.md
+  h_bf4ee866b901f6 11,27,50
+shape/shape.go
+  s_40802df784e47e::t_6cd01388b940de 5,13-20,22-44,47,49,51,53-57,59,64-72,194,196,201,204,206,208,213,215
+  s_40802df784e47e::t_f4de8d85732690 350-351
+makefile
+  h_bf4ee866b901f6 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "f51caea47e66b328324c63e71a65cb38e3a2e818",
+  "prompts": {},
+  "humans": {
+    "h_bf4ee866b901f6": {
+      "author": "liyuan <yuanli23@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_40802df784e47e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "06a76d03-a596-4197-a423-5b1f2ae7cfb7",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "liyuan <yuanli23@trip.com>"
+    }
+  }
+}
