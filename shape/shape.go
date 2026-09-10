@@ -4,18 +4,35 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 
 	"puzzle/constant"
 )
 
 const HOLD = -1
 
-var terminalColor = func() bool {
+const (
+	colorNone = iota
+	color256
+	colorTrue
+)
+
+var terminalColorMode = func() int {
 	if os.Getenv("NO_COLOR") != "" {
-		return false
+		return colorNone
 	}
 	info, err := os.Stdout.Stat()
-	return err == nil && info.Mode()&os.ModeCharDevice != 0
+	if err != nil || info.Mode()&os.ModeCharDevice == 0 {
+		return colorNone
+	}
+	colorTerm := strings.ToLower(os.Getenv("COLORTERM"))
+	if colorTerm == "truecolor" || colorTerm == "24bit" {
+		return colorTrue
+	}
+	if strings.Contains(strings.ToLower(os.Getenv("TERM")), "256color") {
+		return color256
+	}
+	return colorNone
 }()
 
 func PrintBlock(id int) {
@@ -32,11 +49,15 @@ func PrintBlock(id int) {
 		{232, 121, 249},
 		{132, 204, 22},
 	}
+	colors256 := []int{0, 204, 75, 79, 220, 141, 208, 80, 105, 207, 112}
 	if id >= 1 && id <= 10 {
-		if terminalColor {
+		switch terminalColorMode {
+		case colorTrue:
 			color := colors[id]
 			fmt.Printf("\033[48;2;%d;%d;%dm  \033[0m", color[0], color[1], color[2])
-		} else {
+		case color256:
+			fmt.Printf("\033[48;5;%dm  \033[0m", colors256[id])
+		default:
 			fmt.Printf("%02d", id)
 		}
 		return
@@ -50,9 +71,12 @@ func PrintBlock(id int) {
 	case constant.WEEK:
 		fmt.Print("周")
 	case constant.WALL:
-		if terminalColor {
+		switch terminalColorMode {
+		case colorTrue:
 			fmt.Print("\033[48;2;37;43;59m  \033[0m")
-		} else {
+		case color256:
+			fmt.Print("\033[48;5;236m  \033[0m")
+		default:
 			fmt.Print("  ")
 		}
 	default:
@@ -65,9 +89,12 @@ func PrintEmpty() {
 }
 
 func printSelected(value string) {
-	if terminalColor {
+	switch terminalColorMode {
+	case colorTrue:
 		fmt.Printf("\033[1;38;2;23;32;51;48;2;255;255;255m%s\033[0m", value)
-	} else {
+	case color256:
+		fmt.Printf("\033[1;38;5;234;48;5;255m%s\033[0m", value)
+	default:
 		fmt.Print(value)
 	}
 }
